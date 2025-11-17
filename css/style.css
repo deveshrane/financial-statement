@@ -2,34 +2,40 @@
   background-color: #198754;
   color: white;
 }
+
 .btn-import,
 .btn-export {
   background: transparent;
   border: 1px solid #198754;
   color: #198754;
 }
+
 #statementDate {
   font-size: 0.85rem;
   color: grey;
   font-style: italic;
   font-weight: normal;
 }
+
 .passive-badge {
   font-size: 0.7rem;
   color: #198754;
   font-weight: bold;
 }
+
 .liab-section,
 .asset-section {
   margin-top: 0.5rem;
   padding-top: 0.25rem;
 }
+
 .liab-heading,
 .asset-heading {
   font-size: 0.9rem;
   font-weight: 600;
   color: #333;
 }
+
 .liab-empty,
 .asset-empty {
   font-size: 0.85rem;
@@ -42,4 +48,126 @@
   .btn-export span {
     display: none;
   }
+}
+
+/* ---------------------- */
+/*      DARK MODE FIX     */
+/* ---------------------- */
+
+.dark-mode {
+  background-color: #0f0f0f !important;
+  color: #e6e6e6 !important;
+}
+
+/* Card surfaces */
+.dark-mode .card {
+  background-color: #1a1a1a !important;
+  color: #e6e6e6 !important;
+}
+
+/* Card header */
+.dark-mode .card-header {
+  background-color: #222 !important;
+  border-bottom: 1px solid #333 !important;
+  color: #ffffff !important;
+}
+
+/* Text contrast */
+.dark-mode h5,
+.dark-mode strong {
+  color: #ffffff !important;
+}
+
+.dark-mode small,
+.dark-mode .text-secondary,
+.dark-mode .text-muted {
+  color: #bbbbbb !important;
+}
+
+/* Borders */
+.dark-mode .border-bottom {
+  border-color: #333 !important;
+}
+
+/* List dividers */
+.dark-mode .liab-heading,
+.dark-mode .asset-heading {
+  color: #f2f2f2 !important;
+}
+
+/* Empty text */
+.dark-mode .liab-empty,
+.dark-mode .asset-empty {
+  color: #999 !important;
+}
+
+/* Inputs */
+.dark-mode input,
+.dark-mode select {
+  background-color: #2a2a2a !important;
+  color: #e6e6e6 !important;
+  border: 1px solid #444 !important;
+}
+
+.dark-mode input::placeholder,
+.dark-mode select option {
+  color: #999 !important;
+}
+
+/* Modal */
+.dark-mode .modal-content {
+  background-color: #1a1a1a !important;
+  color: #e6e6e6 !important;
+}
+
+.dark-mode .modal-header,
+.dark-mode .modal-footer {
+  border-color: #333 !important;
+}
+
+/* Buttons with borders */
+.dark-mode .btn-import,
+.dark-mode .btn-export {
+  border: 1px solid #198754 !important;
+  color: #27c27f !important;
+}
+
+.dark-mode .btn-import:hover,
+.dark-mode .btn-export:hover {
+  background-color: #198754 !important;
+  color: #fff !important;
+}
+
+/* Add button */
+.dark-mode .btn-add {
+  background-color: #198754 !important;
+  color: white !important;
+}
+
+/* Sun/Moon Toggle Button */
+.btn-theme {
+  border: 1px solid #198754;
+  background: white;
+  color: #198754;
+}
+
+.dark-mode .btn-theme {
+  background: #1a1a1a;
+  border-color: #27c27f;
+  color: #27c27f;
+}
+
+/* Progress bar remains same */
+.dark-mode .progress {
+  background-color: #333 !important;
+}
+
+/* --- Fix close button in modal --- */
+.dark-mode .btn-close {
+  filter: invert(1) brightness(2);
+}
+
+/* --- Fix calendar icon --- */
+.dark-mode input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(2);
 }
