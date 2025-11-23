@@ -63,101 +63,70 @@ function renderList(type) {
     const container = document.getElementById(type + "List");
     container.innerHTML = "";
 
+    /* ============================
+       1) LIABILITIES (3 categories)
+       ============================ */
     if (type === "liabilities") {
-        LIABILITY_CATEGORIES.forEach((cat) => {
-            container.innerHTML += `<div class="liab-section"><div class="liab-heading">${escapeHtml(
-                cat
-            )}</div><div id="liab-${cat.replace(/\s+/g, "_")}" class="liab-items mt-2"></div></div>`;
+        LIABILITY_CATEGORIES.forEach(cat => {
+            container.innerHTML += `
+                <div class="liab-section">
+                    <div class="liab-heading">${escapeHtml(cat)}</div>
+                    <div id="liab-${cat.replace(/\s+/g, "_")}" class="liab-items mt-2"></div>
+                </div>`;
         });
 
-        LIABILITY_CATEGORIES.forEach((cat) => {
-            const section = container.querySelector(
-                `#liab-${cat.replace(/\s+/g, "_")}`
-            );
-            const items = data.liabilities.filter((it) => it.subcategory === cat);
+        LIABILITY_CATEGORIES.forEach(cat => {
+            const section = container.querySelector(`#liab-${cat.replace(/\s+/g, "_")}`);
+            const items = data.liabilities.filter(it => it.subcategory === cat);
 
-            section.innerHTML =
-                items.length === 0
-                    ? `<p class="liab-empty mb-0">No entries yet.</p>`
-                    : items
-                        .map(
-                            (it, idx) =>
-                                `<div class="d-flex justify-content-between border-bottom py-1">
-                    <div>
-                      <strong>${escapeHtml(it.label)}</strong><br/>
-                      <span class="text-secondary small">${it.date}</span>
-                    </div>
-                    <div class="text-end">
-                      ₹${Number(it.value).toLocaleString("en-IN")}
-                      <div>
-                        <button class="btn btn-sm btn-outline-secondary me-1" onclick="openEdit('liabilities',${idx})">
-                          <i class="bi bi-pencil"></i>
-                        </button>
-                        <button class="btn btn-sm btn-outline-danger" onclick="deleteItem('liabilities',${idx})">
-                          <i class="bi bi-trash"></i>
-                        </button>
-                      </div>
-                    </div>
-                   </div>`
-                        )
-                        .join("");
+            section.innerHTML = items.length === 0
+                ? `<p class="liab-empty mb-0">No entries yet.</p>`
+                : items.map(it => {
+                    const realIndex = data.liabilities.indexOf(it);
+                    return renderItemHTML(it, "liabilities", realIndex);
+                }).join("");
         });
+
         return;
     }
 
+    /* ============================
+       2) ASSETS (2 categories)
+       ============================ */
     if (type === "assets") {
-        ASSET_CATEGORIES.forEach((cat) => {
-            container.innerHTML += `<div class="asset-section"><div class="asset-heading">${escapeHtml(
-                cat
-            )}</div><div id="asset-${cat.replace(
-                /\s+/g,
-                "_"
-            )}" class="asset-items mt-2"></div></div>`;
+        ASSET_CATEGORIES.forEach(cat => {
+            container.innerHTML += `
+                <div class="asset-section">
+                    <div class="asset-heading">${escapeHtml(cat)}</div>
+                    <div id="asset-${cat.replace(/\s+/g, "_")}" class="asset-items mt-2"></div>
+                </div>`;
         });
 
-        ASSET_CATEGORIES.forEach((cat) => {
-            const section = container.querySelector(
-                `#asset-${cat.replace(/\s+/g, "_")}`
-            );
-            const items = data.assets.filter((it) => it.subcategory === cat);
+        ASSET_CATEGORIES.forEach(cat => {
+            const section = container.querySelector(`#asset-${cat.replace(/\s+/g, "_")}`);
+            const items = data.assets.filter(it => it.subcategory === cat);
 
-            section.innerHTML =
-                items.length === 0
-                    ? `<p class="asset-empty mb-0">No entries yet.</p>`
-                    : items
-                        .map(
-                            (it, idx) =>
-                                `<div class="d-flex justify-content-between border-bottom py-1">
-                    <div>
-                      <strong>${escapeHtml(it.label)}</strong><br/>
-                      <span class="text-secondary small">${it.date}</span>
-                    </div>
-                    <div class="text-end">
-                      ₹${Number(it.value).toLocaleString("en-IN")}
-                      <div>
-                        <button class="btn btn-sm btn-outline-secondary me-1" onclick="openEdit('assets',${idx})">
-                          <i class="bi bi-pencil"></i>
-                        </button>
-                        <button class="btn btn-sm btn-outline-danger" onclick="deleteItem('assets',${idx})">
-                          <i class="bi bi-trash"></i>
-                        </button>
-                      </div>
-                    </div>
-                   </div>`
-                        )
-                        .join("");
+            section.innerHTML = items.length === 0
+                ? `<p class="asset-empty mb-0">No entries yet.</p>`
+                : items.map(it => {
+                    const realIndex = data.assets.indexOf(it);
+                    return renderItemHTML(it, "assets", realIndex);
+                }).join("");
         });
+
         return;
     }
 
-    // Income categories
+    /* ============================
+       3) INCOME (4 categories)
+       ============================ */
     if (type === "income") {
         INCOME_CATEGORIES.forEach(cat => {
             container.innerHTML += `
-            <div class="asset-section">
-                <div class="asset-heading">${cat}</div>
-                <div id="income-${cat.replace(/\s+/g, "_")}" class="mt-2"></div>
-            </div>`;
+                <div class="asset-section">
+                    <div class="asset-heading">${escapeHtml(cat)}</div>
+                    <div id="income-${cat.replace(/\s+/g, "_")}" class="mt-2"></div>
+                </div>`;
         });
 
         INCOME_CATEGORIES.forEach(cat => {
@@ -166,20 +135,25 @@ function renderList(type) {
 
             section.innerHTML = items.length === 0
                 ? `<p class="text-muted mb-0">No entries yet.</p>`
-                : items.map((it, idx) => renderItemHTML(it, type, idx)).join("");
+                : items.map(it => {
+                    const realIndex = data.income.indexOf(it);
+                    return renderItemHTML(it, "income", realIndex);
+                }).join("");
         });
 
         return;
     }
 
-    // Expense categories
+    /* ============================
+       4) EXPENSE (2 categories)
+       ============================ */
     if (type === "expense") {
         EXPENSE_CATEGORIES.forEach(cat => {
             container.innerHTML += `
-            <div class="asset-section">
-                <div class="asset-heading">${cat}</div>
-                <div id="expense-${cat.replace(/\s+/g, "_")}" class="mt-2"></div>
-            </div>`;
+                <div class="asset-section">
+                    <div class="asset-heading">${escapeHtml(cat)}</div>
+                    <div id="expense-${cat.replace(/\s+/g, "_")}" class="mt-2"></div>
+                </div>`;
         });
 
         EXPENSE_CATEGORIES.forEach(cat => {
@@ -188,11 +162,19 @@ function renderList(type) {
 
             section.innerHTML = items.length === 0
                 ? `<p class="text-muted mb-0">No entries yet.</p>`
-                : items.map((it, idx) => renderItemHTML(it, type, idx)).join("");
+                : items.map(it => {
+                    const realIndex = data.expense.indexOf(it);
+                    return renderItemHTML(it, "expense", realIndex);
+                }).join("");
         });
 
         return;
     }
+
+    /* ============================
+       5) FALLBACK (unused now)
+       ============================ */
+    container.innerHTML = `<p class='text-muted mb-0'>No entries yet.</p>`;
 }
 
 function updateTotals() {
