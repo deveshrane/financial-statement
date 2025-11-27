@@ -1,39 +1,101 @@
-.btn-add {
-  background-color: #198754;
-  color: white;
+/* ============================================================
+   FINANCIAL STATEMENT — FINAL UI SYSTEM
+   Clean, modern, accessible. Supports Hybrid Dark Mode.
+   ============================================================ */
+
+/* ------------------------------------------------------------
+   ROOT DESIGN TOKENS
+   ------------------------------------------------------------ */
+:root {
+  --green: #198754;
+  --green-dark: #157347;
+  --green-bright: #27c27f;
+
+  --red: #dc3545;
+  --red-dark: #b02a37;
+
+  --yellow: #ffcf4a;
+  --yellow-text: #4a3d00;
+
+  --blue: #0d6efd;
+
+  --text-dark: #212529;
+  --text-muted: #6c757d;
+  --text-light: #f8f9fa;
+
+  --light-bg: #ffffff;
+  --light-surface: #f8f9fa;
+
+  --dark-bg: #0f0f0f;
+  --dark-surface: #1a1a1a;
+  --dark-input: #262626;
+
+  --border-light: rgba(0,0,0,0.06);
+  --border-dark: #333;
+
+  --radius: 10px;
+  --radius-sm: 8px;
+
+  --input-pad-y: 8px;
+  --input-pad-x: 12px;
 }
 
-.btn-import,
-.btn-export {
-  background: transparent;
-  border: 1px solid #198754;
-  color: #198754;
+/* ------------------------------------------------------------
+   BASE TYPOGRAPHY
+   ------------------------------------------------------------ */
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 16px;
+  background-color: var(--light-bg);
+  color: var(--text-dark);
+  -webkit-font-smoothing: antialiased;
 }
 
+h1, h2, h3, h4, h5 {
+  font-weight: 600;
+  margin: 0;
+}
+
+/* Statement date */
 #statementDate {
   font-size: 0.85rem;
-  color: grey;
   font-style: italic;
-  font-weight: normal;
+  color: var(--text-muted);
 }
 
-.passive-badge {
-  font-size: 0.7rem;
-  color: #198754;
-  font-weight: bold;
-}
-
-.liab-section,
-.asset-section {
-  margin-top: 0.5rem;
-  padding-top: 0.25rem;
-}
-
-.liab-heading,
-.asset-heading {
-  font-size: 0.9rem;
+/* Category headings */
+.asset-heading,
+.liab-heading {
   font-weight: 600;
-  color: #333;
+  font-size: 1rem;
+  color: var(--green);
+}
+
+.asset-section:not(:first-of-type) .asset-heading {
+  margin-top: 10px;
+}
+
+.liab-section:not(:first-of-type) .liab-heading {
+  margin-top: 10px;
+}
+
+/* ------------------------------------------------------------
+   CARDS
+   ------------------------------------------------------------ */
+.card {
+  border-radius: var(--radius) !important;
+  border: 1px solid var(--border-light) !important;
+  background: var(--light-bg);
+}
+
+.card-header,
+.card-footer {
+  background: transparent !important;
+  border-color: var(--border-light) !important;
+}
+
+.border-bottom {
+  border-color: var(--border-light) !important;
 }
 
 .liab-empty,
@@ -42,179 +104,454 @@
   color: #6c757d;
 }
 
-/* Hide Import/Export text on phones */
+.text-muted {
+  font-size: 0.85rem;
+  color: #6c757d !important;
+}
+
+/* ------------------------------------------------------------
+   BUTTONS
+   ------------------------------------------------------------ */
+   /* =====================================================
+   GLOBAL OVERRIDE: Make ALL Bootstrap blue buttons green
+   ===================================================== */
+
+/* Primary → Green */
+.btn-primary {
+  background-color: #198754 !important;
+  border-color: #198754 !important;
+  color: #fff !important;
+}
+
+.btn-primary:hover,
+.btn-primary:active,
+.btn-primary:focus {
+  background-color: #157347 !important;
+  border-color: #157347 !important;
+  color: #fff !important;
+}
+
+/* Outline primary → Green outline */
+.btn-outline-primary {
+  color: #198754 !important;
+  border-color: #198754 !important;
+}
+
+.btn-outline-primary:hover {
+  background-color: #198754 !important;
+  border-color: #198754 !important;
+  color: #fff !important;
+}
+
+/* Link (text-only) primary */
+.btn-link,
+.btn-link:hover,
+.btn-link:focus {
+  color: #198754 !important;
+}
+
+/* Remove blue focus ring */
+.btn-primary:focus-visible,
+.btn-outline-primary:focus-visible,
+.btn-link:focus-visible {
+  box-shadow: 0 0 0 3px rgba(25, 135, 84, 0.4) !important;
+}
+
+/* =====================================
+   DARK MODE PRIMARY BUTTONS (Green)
+   ===================================== */
+body.dark-mode .btn-primary {
+  background-color: #27c27f !important;
+  border-color: #27c27f !important;
+  color: #000 !important;
+}
+
+body.dark-mode .btn-primary:hover {
+  background-color: #1ea76e !important;
+  border-color: #1ea76e !important;
+}
+
+body.dark-mode .btn-outline-primary {
+  color: #27c27f !important;
+  border-color: #27c27f !important;
+}
+
+body.dark-mode .btn-outline-primary:hover {
+  background-color: #27c27f !important;
+  color: #000 !important;
+}
+.btn {
+  font-size: 0.9rem !important;
+  border-radius: var(--radius-sm) !important;
+  padding: 6px 14px !important;
+}
+
+/* “+ Add” green button */
+.btn-add {
+  background: var(--green);
+  color: #fff;
+  border: 1px solid rgba(0,0,0,0.04);
+}
+.btn-add:hover {
+  background: var(--green-dark);
+  color: #fff;
+}
+
+/* Cancel = red */
+.btn-cancel {
+  background: var(--red);
+  color: #fff;
+  border: 1px solid rgba(0,0,0,0.04);
+}
+.btn-cancel:hover {
+  background: var(--red-dark);
+}
+
+/* Outline actions (Import / Export / Theme toggle) */
+.btn-import,
+.btn-export,
+.btn-theme {
+  background: transparent;
+  border: 1px solid var(--green);
+  color: var(--green);
+}
+.btn-import:hover,
+.btn-export:hover,
+.btn-theme:hover {
+  background: var(--green);
+  color: #fff;
+}
+
+/* Small edit/delete actions */
+.btn-outline-secondary,
+.btn-outline-danger {
+  padding: 2px 6px !important;
+  font-size: 0.75rem !important;
+  border-radius: 6px !important;
+}
+
+/* ------------------------------------------------------------
+   INPUTS
+   ------------------------------------------------------------ */
+input,
+select,
+textarea {
+  border-radius: 10px !important;
+  padding: var(--input-pad-y) var(--input-pad-x) !important;
+  border: 1px solid var(--border-light) !important;
+  background: var(--light-bg);
+  color: var(--text-dark);
+}
+
+/* ------------------------------------------------------------
+   TOASTS
+   ------------------------------------------------------------ */
+.toast {
+  border-radius: 12px !important;
+  padding: 0 !important;
+  min-width: 260px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+}
+
+.toast .toast-body {
+  padding: 12px 16px !important;
+  font-size: 0.9rem;
+}
+
+.toast-success { background: var(--green) !important; color: #fff; }
+.toast-warning { background: var(--yellow) !important; color: var(--yellow-text); }
+.toast-error   { background: var(--red) !important; color: #fff; }
+.toast-info    { background: var(--blue) !important; color: #fff; }
+
+/* ------------------------------------------------------------
+   MODALS
+   ------------------------------------------------------------ */
+.modal-content {
+  border-radius: var(--radius) !important;
+  border: 1px solid var(--border-light) !important;
+}
+
+.modal-header,
+.modal-footer {
+  border-color: var(--border-light) !important;
+}
+
+/* Highest row */
+.highest-row {
+  display: inline;
+  align-items: center; 
+  margin-top: 0.75rem;
+}
+
+/* Percentage badge */
+.highest-badge {
+  background: var(--green);
+  color: #fff;
+  font-size: 0.75rem;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+/* Dark mode */
+.dark-mode .highest-badge {
+  background: #27c27f;
+  color: #000;
+}
+/* Fix stretched radio buttons */
+input[type="radio"] {
+  width: auto !important;
+  height: auto !important;
+  padding: 0 !important;
+  margin: 0 6px 0 0 !important;
+  border-radius: 50% !important;
+  transform: none !important;
+}
+
+/* Ensure Bootstrap default sizing */
+.form-check-input[type="radio"] {
+  width: 1em !important;
+  height: 1em !important;
+  margin-top: 0.25em !important;
+  flex-shrink: 0 !important;
+}
+/* ------------------------------------------------------------
+   RESPONSIVE TWEAKS
+   ------------------------------------------------------------ */
 @media (max-width: 576px) {
+  .top-actions {
+    width: 100%;
+    margin-top: 10px;
+    display: flex;
+    gap: 8px;
+  }
+  .top-actions button {
+    flex: 1;
+  }
+
   .btn-import span,
   .btn-export span {
     display: none;
   }
 }
 
-/* ---------------------- */
-/*      DARK MODE FIX     */
-/* ---------------------- */
-
-.dark-mode {
-  background-color: #0f0f0f !important;
-  color: #e6e6e6 !important;
-}
-
-/* Card surfaces */
-.dark-mode .card {
-  background-color: #1a1a1a !important;
-  color: #e6e6e6 !important;
-}
-
-/* Card header */
-.dark-mode .card-header {
-  background-color: #222 !important;
-  border-bottom: 1px solid #333 !important;
-  color: #ffffff !important;
-}
-
-/* Text contrast */
-.dark-mode h5,
-.dark-mode strong {
-  color: #ffffff !important;
-}
-
-.dark-mode small,
-.dark-mode .text-secondary,
-.dark-mode .text-muted {
-  color: #bbbbbb !important;
-}
-
-/* Borders */
-.dark-mode .border-bottom {
-  border-color: #333 !important;
-}
-
-/* List dividers */
-.dark-mode .liab-heading,
-.dark-mode .asset-heading {
-  color: #f2f2f2 !important;
-}
-
-/* Empty text */
-.dark-mode .liab-empty,
-.dark-mode .asset-empty {
-  color: #999 !important;
-}
-
-/* Inputs */
-.dark-mode input,
-.dark-mode select {
-  background-color: #2a2a2a !important;
-  color: #e6e6e6 !important;
-  border: 1px solid #444 !important;
-}
-
-.dark-mode input::placeholder,
-.dark-mode select option {
-  color: #999 !important;
-}
-
-/* Modal */
-.dark-mode .modal-content {
-  background-color: #1a1a1a !important;
-  color: #e6e6e6 !important;
-}
-
-.dark-mode .modal-header,
-.dark-mode .modal-footer {
-  border-color: #333 !important;
-}
-
-/* Buttons with borders */
-.dark-mode .btn-import,
-.dark-mode .btn-export {
-  border: 1px solid #198754 !important;
-  color: #27c27f !important;
-}
-
-.dark-mode .btn-import:hover,
-.dark-mode .btn-export:hover {
-  background-color: #198754 !important;
-  color: #fff !important;
-}
-
-/* Add button */
-.dark-mode .btn-add {
-  background-color: #198754 !important;
-  color: white !important;
-}
-
-/* Sun/Moon Toggle Button */
-.btn-theme {
-  border: 1px solid #198754;
-  background: white;
-  color: #198754;
-}
-
-.dark-mode .btn-theme {
-  background: #1a1a1a;
-  border-color: #27c27f;
-  color: #27c27f;
-}
-
-/* Progress bar remains same */
-.dark-mode .progress {
-  background-color: #333 !important;
-}
-
-/* --- Fix close button in modal --- */
-.dark-mode .btn-close {
-  filter: invert(1) brightness(2);
-}
-
-/* --- Fix calendar icon --- */
-.dark-mode input[type="date"]::-webkit-calendar-picker-indicator {
-  filter: invert(1) brightness(2);
-}
-
-/* Ensure toggle button has border in light mode */
-.btn-theme {
-  border: 1px solid #198754 !important;
-}
-
-/* iPad specific padding fix */
-@media (min-width: 768px) and (max-width: 1180px) {
-  .container {
-    padding-left: 10px !important;
-    padding-right: 10px !important;
-    max-width: 100% !important;
-  }
-}
-
-/* Desktop/iPad: keep buttons inline */
-@media (min-width: 577px) {
-  .top-actions {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-}
-
-/* Mobile: buttons on new line */
-@media (max-width: 576px) {
-  .top-actions {
-    width: 100%;
-    margin-top: 10px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
-  .top-actions button {
-    flex: 1;
-  }
-}
-
-/* iPad (Air 11", Pro 11", Pro 12.9/13") – reduce left/right padding */
 @media (min-width: 768px) and (max-width: 1366px) {
   .container {
     padding-left: 10px !important;
     padding-right: 10px !important;
     max-width: 100% !important;
   }
+}
+
+/* ============================================================
+   CLEAN, COMPLETE, STABLE DARK MODE FOR YOUR EXISTING HTML
+   ============================================================ */
+
+body.dark-mode {
+  background-color: #0d0d0d !important;
+  color: #e6e6e6 !important;
+}
+
+/* ------------------------------
+   CARD + HEADER + FOOTER
+------------------------------ */
+body.dark-mode .card {
+  background-color: #1a1a1a !important;
+  border-color: #333 !important;
+  color: #e6e6e6 !important;
+}
+
+body.dark-mode .card-header,
+body.dark-mode .card-footer {
+  background-color: #1a1a1a !important;
+  border-color: #333 !important;
+  color: #e6e6e6 !important;
+}
+
+/* Dividers inside cards */
+body.dark-mode .border-bottom {
+  border-color: #333 !important;
+}
+
+/* ------------------------------
+   CATEGORY HEADINGS (Green)
+------------------------------ */
+body.dark-mode .asset-heading,
+body.dark-mode .liab-heading {
+  color: #27c27f !important;
+}
+
+/* ------------------------------
+   ITEM ROWS (Income/Expense/Asset/Liability)
+------------------------------ */
+body.dark-mode #incomeList,
+body.dark-mode #expenseList,
+body.dark-mode #assetsList,
+body.dark-mode #liabilitiesList {
+  color: #e6e6e6 !important;
+}
+
+/* strong labels */
+body.dark-mode #incomeList strong,
+body.dark-mode #expenseList strong,
+body.dark-mode #assetsList strong,
+body.dark-mode #liabilitiesList strong {
+  color: #ffffff !important;
+}
+
+/* dates + muted text */
+body.dark-mode #incomeList .text-secondary,
+body.dark-mode #expenseList .text-secondary,
+body.dark-mode #assetsList .text-secondary,
+body.dark-mode #liabilitiesList .text-secondary {
+  color: #bbbbbb !important;
+}
+
+/* “No entry yet” */
+body.dark-mode .text-muted,
+body.dark-mode .liab-empty,
+body.dark-mode .asset-empty {
+  font-size: 0.85rem;
+  color: #999 !important;
+}
+
+/* ------------------------------
+   INPUTS + SELECT (MODAL)
+------------------------------ */
+body.dark-mode input,
+body.dark-mode select,
+body.dark-mode textarea {
+  background-color: #222 !important;
+  color: #e6e6e6 !important;
+  border: 1px solid #555 !important;
+}
+
+body.dark-mode input::placeholder,
+body.dark-mode select option {
+  color: #999 !important;
+}
+
+/* Calendar icon */
+body.dark-mode input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(1.6);
+}
+
+/* ------------------------------
+   MODAL
+------------------------------ */
+body.dark-mode .modal-content {
+  background-color: #1a1a1a !important;
+  border: 1px solid #333 !important;
+  color: #e6e6e6 !important;
+}
+
+body.dark-mode .modal-header,
+body.dark-mode .modal-footer {
+  background-color: #1a1a1a !important;
+  border-color: #333 !important;
+}
+
+/* Close button */
+body.dark-mode .modal .btn-close {
+  filter: invert(1) brightness(2);
+}
+
+/* ------------------------------
+   BUTTONS
+------------------------------ */
+
+/* Green buttons */
+body.dark-mode .btn-add,
+body.dark-mode .btn-export:hover,
+body.dark-mode .btn-import:hover {
+  background-color: #198754 !important;
+  color: #fff !important;
+}
+
+/* Outline buttons (Import/Export/Theme) */
+body.dark-mode .btn-import,
+body.dark-mode .btn-export,
+body.dark-mode .btn-theme {
+  background: transparent !important;
+  border-color: #27c27f !important;
+  color: #27c27f !important;
+}
+
+body.dark-mode .btn-theme:hover {
+  background-color: #27c27f !important;
+  color: #000 !important;
+}
+
+/* Cancel button (red) */
+body.dark-mode .btn-cancel {
+  background-color: #e04a52 !important;
+  color: white !important;
+}
+
+/* Delete (danger) */
+body.dark-mode .btn-danger {
+  background-color: #e04a52 !important;
+}
+
+/* ------------------------------
+   PROGRESS + RESULT PANEL
+------------------------------ */
+body.dark-mode .progress {
+  background-color: #333 !important;
+}
+
+/* ------------------------------
+   TOASTS
+------------------------------ */
+
+body.dark-mode .toast {
+  border: 1px solid #333 !important;
+  background-color: #202020 !important;
+  color: #fff !important;
+}
+
+/* Success */
+body.dark-mode .toast-success {
+  background-color: #198754 !important;
+}
+
+/* Warning */
+body.dark-mode .toast-warning {
+  background-color: #ffcf4a !important;
+  color: #4a3d00 !important;
+}
+
+/* Error (delete) */
+body.dark-mode .toast-error {
+  background-color: #e04a52 !important;
+  color: #fff !important;
+}
+
+/* Info */
+body.dark-mode .toast-info {
+  background-color: #0d6efd !important;
+}
+
+/* Toast close button */
+body.dark-mode .toast .btn-close {
+  filter: invert(1) brightness(2);
+}
+
+/* ------------------------------
+   HEADINGS / TITLES
+------------------------------ */
+body.dark-mode h1,
+body.dark-mode h2,
+body.dark-mode h3,
+body.dark-mode h4,
+body.dark-mode h5,
+body.dark-mode h6 {
+  color: #ffffff !important;
+}
+
+/* ------------------------------
+   Extra: Ensure all text defaults to light
+------------------------------ */
+body.dark-mode * {
+  color-scheme: dark;
 }

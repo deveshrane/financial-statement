@@ -1,330 +1,197 @@
-/* YOUR ORIGINAL JS CODE (UNCHANGED EXCEPT DECIMAL + DARK MODE AT END) */
+/********************************
+ * Financial Statement – Fixed JS
+ * Passive checkbox removed
+ * Modal error fixed
+ ********************************/
+
+/* ------------------------
+   Constants
+   ------------------------*/
 const INCOME_CATEGORIES = ["Earned", "Portfolio", "Passive", "Miscellaneous"];
 const EXPENSE_CATEGORIES = ["Necessary", "Unnecessary"];
+const LIABILITY_CATEGORIES = ["Equities", "Long Term Loans", "Current Liabilities"];
+const ASSET_CATEGORIES = ["Fixed Assets", "Current Assets", "Depreciating Assets"];
+
+/* ------------------------
+   State
+   ------------------------*/
 let data = { income: [], expense: [], liabilities: [], assets: [] };
-let subcategories = {
-    income: [],
-    expense: [],
-    liabilities: [],
-    assets: [],
-};
+let highestProgress = 0;
 
-const LIABILITY_CATEGORIES = [
-    "Equities",
-    "Long Term Loans",
-    "Current Liabilities",
-];
-const ASSET_CATEGORIES = ["Fixed Assets", "Current Assets"];
-
-const itemModal = new bootstrap.Modal(document.getElementById("itemModal"));
-const form = document.getElementById("itemForm");
-
+/* ------------------------
+   Utilities
+   ------------------------*/
 function escapeHtml(str) {
-    return String(str).replace(/[&<>"']/g, (s) =>
-    ({
-        "&": "&amp;",
-        "<": "&lt;",
-        ">": "&gt;",
-        '"': "&quot;",
-        "'": "&#39;",
-    }[s])
+    return String(str || "").replace(/[&<>"']/g, (m) =>
+        ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m])
     );
 }
 
-function capitalize(s) {
-    return s.charAt(0).toUpperCase() + s.slice(1);
+function showToast(message, variant = "info") {
+    const container = document.getElementById("toastContainer");
+    const toast = document.createElement("div");
+    toast.className = `toast toast-${variant} shadow`;
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">${escapeHtml(message)}</div>
+            <button class="btn-close me-2 m-auto"></button>
+        </div>`;
+    container.appendChild(toast);
+
+    toast.querySelector(".btn-close").onclick = () => toast.remove();
+    setTimeout(() => toast.remove(), 2500);
 }
 
-function renderAll() {
-    ["income", "expense", "liabilities", "assets"].forEach((t) => renderList(t));
-    updateTotals();
-}
+/* ------------------------
+   Render List Items
+   ------------------------*/
 function renderItemHTML(it, type, idx) {
     return `
-        <div class="d-flex justify-content-between border-bottom py-1">
+    <div class="d-flex justify-content-between border-bottom py-1">
+        <div>
+            <strong>${escapeHtml(it.label)}</strong><br>
+            <span class="text-secondary small">${escapeHtml(it.date)}</span>
+        </div>
+        <div class="text-end">
+            ₹${Number(it.value).toLocaleString("en-IN")}
             <div>
-              <strong>${escapeHtml(it.label)}</strong><br/>
-              <span class="text-secondary small">${it.date}</span>
-            </div>
-            <div class="text-end">
-              ₹${Number(it.value).toLocaleString("en-IN")}
-              <div>
                 <button class="btn btn-sm btn-outline-secondary me-1" onclick="openEdit('${type}',${idx})">
                     <i class="bi bi-pencil"></i>
                 </button>
-                <button class="btn btn-sm btn-outline-danger" onclick="deleteItem('${type}',${idx})">
+                <button class="btn btn-sm btn-outline-danger" onclick="requestDelete('${type}',${idx})">
                     <i class="bi bi-trash"></i>
                 </button>
-              </div>
             </div>
-        </div>`;
+        </div>
+    </div>`;
 }
-function renderList(type) {
-    const container = document.getElementById(type + "List");
+
+function renderSection(container, categories, itemsArr, type) {
     container.innerHTML = "";
+    categories.forEach(cat => {
+        const id = `${type}-${cat.replace(/\s+/g, "_")}`;
+        container.insertAdjacentHTML(
+            "beforeend",
+            `<div class="asset-section">
+                <div class="asset-heading">${cat}</div>
+                <div id="${id}" class="mt-2"></div>
+            </div>`
+        );
+    });
 
-    /* ============================
-       1) LIABILITIES (3 categories)
-       ============================ */
-    if (type === "liabilities") {
-        LIABILITY_CATEGORIES.forEach(cat => {
-            container.innerHTML += `
-                <div class="liab-section">
-                    <div class="liab-heading">${escapeHtml(cat)}</div>
-                    <div id="liab-${cat.replace(/\s+/g, "_")}" class="liab-items mt-2"></div>
-                </div>`;
-        });
+    itemsArr.forEach((it, idx) => {
+        const sec = container.querySelector(
+            `#${type}-${it.subcategory.replace(/\s+/g, "_")}`
+        );
+        if (sec) sec.insertAdjacentHTML("beforeend", renderItemHTML(it, type, idx));
+    });
 
-        LIABILITY_CATEGORIES.forEach(cat => {
-            const section = container.querySelector(`#liab-${cat.replace(/\s+/g, "_")}`);
-            const items = data.liabilities.filter(it => it.subcategory === cat);
-
-            section.innerHTML = items.length === 0
-                ? `<p class="liab-empty mb-0">No entries yet.</p>`
-                : items.map(it => {
-                    const realIndex = data.liabilities.indexOf(it);
-                    return renderItemHTML(it, "liabilities", realIndex);
-                }).join("");
-        });
-
-        return;
-    }
-
-    /* ============================
-       2) ASSETS (2 categories)
-       ============================ */
-    if (type === "assets") {
-        ASSET_CATEGORIES.forEach(cat => {
-            container.innerHTML += `
-                <div class="asset-section">
-                    <div class="asset-heading">${escapeHtml(cat)}</div>
-                    <div id="asset-${cat.replace(/\s+/g, "_")}" class="asset-items mt-2"></div>
-                </div>`;
-        });
-
-        ASSET_CATEGORIES.forEach(cat => {
-            const section = container.querySelector(`#asset-${cat.replace(/\s+/g, "_")}`);
-            const items = data.assets.filter(it => it.subcategory === cat);
-
-            section.innerHTML = items.length === 0
-                ? `<p class="asset-empty mb-0">No entries yet.</p>`
-                : items.map(it => {
-                    const realIndex = data.assets.indexOf(it);
-                    return renderItemHTML(it, "assets", realIndex);
-                }).join("");
-        });
-
-        return;
-    }
-
-    /* ============================
-       3) INCOME (4 categories)
-       ============================ */
-    if (type === "income") {
-        INCOME_CATEGORIES.forEach(cat => {
-            container.innerHTML += `
-                <div class="asset-section">
-                    <div class="asset-heading">${escapeHtml(cat)}</div>
-                    <div id="income-${cat.replace(/\s+/g, "_")}" class="mt-2"></div>
-                </div>`;
-        });
-
-        INCOME_CATEGORIES.forEach(cat => {
-            const section = container.querySelector(`#income-${cat.replace(/\s+/g, "_")}`);
-            const items = data.income.filter(it => it.subcategory === cat);
-
-            section.innerHTML = items.length === 0
-                ? `<p class="text-muted mb-0">No entries yet.</p>`
-                : items.map(it => {
-                    const realIndex = data.income.indexOf(it);
-                    return renderItemHTML(it, "income", realIndex);
-                }).join("");
-        });
-
-        return;
-    }
-
-    /* ============================
-       4) EXPENSE (2 categories)
-       ============================ */
-    if (type === "expense") {
-        EXPENSE_CATEGORIES.forEach(cat => {
-            container.innerHTML += `
-                <div class="asset-section">
-                    <div class="asset-heading">${escapeHtml(cat)}</div>
-                    <div id="expense-${cat.replace(/\s+/g, "_")}" class="mt-2"></div>
-                </div>`;
-        });
-
-        EXPENSE_CATEGORIES.forEach(cat => {
-            const section = container.querySelector(`#expense-${cat.replace(/\s+/g, "_")}`);
-            const items = data.expense.filter(it => it.subcategory === cat);
-
-            section.innerHTML = items.length === 0
-                ? `<p class="text-muted mb-0">No entries yet.</p>`
-                : items.map(it => {
-                    const realIndex = data.expense.indexOf(it);
-                    return renderItemHTML(it, "expense", realIndex);
-                }).join("");
-        });
-
-        return;
-    }
-
-    /* ============================
-       5) FALLBACK (unused now)
-       ============================ */
-    container.innerHTML = `<p class='text-muted mb-0'>No entries yet.</p>`;
+    categories.forEach(cat => {
+        const sec = container.querySelector(`#${type}-${cat.replace(/\s+/g, "_")}`);
+        if (sec && !sec.innerHTML.trim())
+            sec.innerHTML = `<p class="text-muted mb-0">No entries yet.</p>`;
+    });
 }
 
+function renderList(type) {
+    const el = document.getElementById(type + "List");
+
+    if (type === "income") return renderSection(el, INCOME_CATEGORIES, data.income, "income");
+    if (type === "expense") return renderSection(el, EXPENSE_CATEGORIES, data.expense, "expense");
+    if (type === "liabilities") return renderSection(el, LIABILITY_CATEGORIES, data.liabilities, "liabilities");
+    if (type === "assets") return renderSection(el, ASSET_CATEGORIES, data.assets, "assets");
+
+    el.innerHTML = `<p class="text-muted">No entries yet.</p>`;
+}
+
+function renderAll() {
+    ["income", "expense", "liabilities", "assets"].forEach(renderList);
+    updateTotals();
+}
+
+/* ------------------------
+   Totals & Ratios
+   ------------------------*/
 function updateTotals() {
-    ["income", "expense", "liabilities", "assets"].forEach((type) => {
-        const total = data[type].reduce((s, it) => s + Number(it.value || 0), 0);
+    ["income", "expense", "liabilities", "assets"].forEach(type => {
+        const sum = data[type].reduce((a, b) => a + Number(b.value || 0), 0);
         document.getElementById(type + "Total").textContent =
-            "₹" + total.toLocaleString("en-IN");
+            "₹" + sum.toLocaleString("en-IN");
     });
 
     const cashFlow =
-        data.income.reduce((s, it) => s + Number(it.value || 0), 0) -
-        data.expense.reduce((s, it) => s + Number(it.value || 0), 0);
+        data.income.reduce((a, b) => a + Number(b.value), 0) -
+        data.expense.reduce((a, b) => a + Number(b.value), 0);
     document.getElementById("currentCashFlow").textContent =
         "₹" + cashFlow.toLocaleString("en-IN");
 
+    // PASSIVE = income items with subcategory 'Passive'
     const passiveTotal = data.income
-        .filter((it) => it.passive)
-        .reduce((s, it) => s + Number(it.value || 0), 0);
+        .filter(it => it.subcategory === "Passive")
+        .reduce((a, b) => a + Number(b.value), 0);
+
     document.getElementById("passiveIncome").textContent =
         "₹" + passiveTotal.toLocaleString("en-IN");
 
-    const currentAssets = data.assets
-        .filter((it) => it.subcategory === "Current Assets")
-        .reduce((s, it) => s + Number(it.value || 0), 0);
-    const currentLiab = data.liabilities
-        .filter((it) => it.subcategory === "Current Liabilities")
-        .reduce((s, it) => s + Number(it.value || 0), 0);
+    const totalExp = data.expense.reduce((a, b) => a + Number(b.value), 0);
+    const progress = totalExp === 0 ? 0 : Math.min(100, (passiveTotal / (2 * totalExp)) * 100);
 
-    const ratio =
-        currentLiab === 0
-            ? "N/A"
-            : (currentAssets / currentLiab).toFixed(2) + ":1";
-    document.getElementById("liquidityRatio").textContent = ratio;
-
-    const totalExpenses = data.expense.reduce((s, it) => s + Number(it.value || 0), 0);
-    const passive = data.income
-        .filter((i) => i.passive)
-        .reduce((s, i) => s + Number(i.value), 0);
-
-    const progress =
-        totalExpenses === 0 ? 0 : Math.min(100, (passive / (2 * totalExpenses)) * 100);
-
-    // CURRENT progress %
     const current = Math.round(progress);
+    if (current > highestProgress) highestProgress = current;
 
-    // Load previous highest
-    let highest = Number(localStorage.getItem("highestProgress") || 0);
-
-    // Update highest if current is greater
-    if (current > highest) {
-        highest = current;
-        localStorage.setItem("highestProgress", highest);
-    }
-
-    // Update UI
     document.getElementById("exitProgress").style.width = current + "%";
     document.getElementById("exitPercent").textContent = current + "%";
-    document.getElementById("highestPercent").textContent = highest + "%";
+    document.getElementById("highestPercent").textContent = highestProgress + "%";
 
-    const allDates = [
-        ...data.income,
-        ...data.expense,
-        ...data.assets,
-        ...data.liabilities,
-    ]
-        .map((it) => it.date)
+    const allDates = [...data.income, ...data.expense, ...data.assets, ...data.liabilities]
+        .map(i => i.date)
         .filter(Boolean);
 
     document.getElementById("statementDate").textContent =
-        allDates.length === 0
-            ? "(as on -)"
-            : "(as on " + allDates.sort().reverse()[0] + ")";
+        allDates.length ? `(as on ${allDates.sort().reverse()[0]})` : "(as on -)";
 }
+
+/* ------------------------
+   Modal Logic (fixed)
+   ------------------------*/
+const itemModal = new bootstrap.Modal(document.getElementById("itemModal"));
 
 function openModal(type) {
     document.getElementById("modalType").value = type;
     document.getElementById("editIndex").value = "";
-    form.reset();
-    document.getElementById("modalTitle").textContent =
-        "Add " + capitalize(type);
+    document.getElementById("itemForm").reset();
 
-    document.getElementById("subcatWrapper").style.display =
+    document.getElementById("incomeExpenseRadios").style.display =
         (type === "income" || type === "expense") ? "block" : "none";
-    document.getElementById("liabilityRadios").style.display =
-        type === "liabilities" ? "block" : "none";
-    document.getElementById("assetRadios").style.display =
-        type === "assets" ? "block" : "none";
-    document.getElementById("passiveWrapper").style.display =
-        type === "income" ? "block" : "none";
 
-    if (type === "income" || type === "expense") populateSubcats(type);
-    else if (type === "liabilities")
-        document.querySelector('input[name="liabType"]').checked = true;
-    else if (type === "assets")
-        document.querySelector('input[name="assetType"]').checked = true;
+    document.getElementById("liabilityRadios").classList.toggle(
+        "d-none",
+        type !== "liabilities"
+    );
+
+    document.getElementById("assetRadios").classList.toggle(
+        "d-none",
+        type !== "assets"
+    );
+
+    // Build radio group for income/expense
+    if (type === "income" || type === "expense") {
+        const cont = document.getElementById("incomeExpenseRadioContainer");
+        const cats = type === "income" ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
+        cont.innerHTML = cats
+            .map(
+                c => `
+            <div class="form-check">
+                <input class="form-check-input" type="radio" name="ieCategory" value="${c}">
+                <label class="form-check-label">${c}</label>
+            </div>`
+            )
+            .join("");
+        cont.querySelector(".form-check-input").checked = true;
+    }
 
     itemModal.show();
 }
-
-function populateSubcats(type, selected = "") {
-    const sel = document.getElementById("modalSubcat");
-    sel.innerHTML = "";
-
-    const cats = type === "income" ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
-
-    cats.forEach(cat => {
-        const opt = document.createElement("option");
-        opt.value = cat;
-        opt.textContent = cat;
-        if (cat === selected) opt.selected = true;
-        sel.appendChild(opt);
-    });
-
-    document.getElementById("newSubcat").style.display = "none";
-}
-
-form.addEventListener("submit", (e) => {
-    e.preventDefault();
-    const type = document.getElementById("modalType").value;
-    const label = document.getElementById("modalLabel").value;
-
-    // DECIMAL SUPPORT
-    const value = Number(document.getElementById("modalValue").value);
-
-    const date = document.getElementById("modalDate").value;
-    const passive = document.getElementById("modalPassive").checked;
-
-    let subcat = "";
-
-    if (type === "income" || type === "expense") {
-        subcat =
-            document.getElementById("newSubcat").value ||
-            document.getElementById("modalSubcat").value;
-        if (subcat && !subcategories[type].includes(subcat))
-            subcategories[type].push(subcat);
-    } else if (type === "liabilities") {
-        subcat = document.querySelector('input[name="liabType"]:checked').value;
-    } else if (type === "assets") {
-        subcat = document.querySelector('input[name="assetType"]:checked').value;
-    }
-
-    const item = { label, value, date, subcategory: subcat, passive };
-
-    const editIdx = document.getElementById("editIndex").value;
-    if (editIdx === "") data[type].push(item);
-    else data[type][editIdx] = item;
-
-    renderAll();
-    itemModal.hide();
-});
 
 function openEdit(type, idx) {
     const it = data[type][idx];
@@ -333,117 +200,162 @@ function openEdit(type, idx) {
     document.getElementById("modalLabel").value = it.label;
     document.getElementById("modalValue").value = it.value;
     document.getElementById("modalDate").value = it.date;
+    document.getElementById("editIndex").value = idx;
 
     if (type === "income" || type === "expense") {
-        populateSubcats(type, it.subcategory);
-        document.getElementById("newSubcat").value = "";
-        document.getElementById("modalPassive").checked = !!it.passive;
+        const r = [...document.querySelectorAll('input[name="ieCategory"]')];
+        r.forEach(x => (x.checked = x.value === it.subcategory));
+    }
+    if (type === "liabilities") {
+        document.querySelectorAll('input[name="liabType"]').forEach(
+            x => (x.checked = x.value === it.subcategory)
+        );
+    }
+    if (type === "assets") {
+        document.querySelectorAll('input[name="assetType"]').forEach(
+            x => (x.checked = x.value === it.subcategory)
+        );
+    }
+}
+
+/* ------------------------
+   Save Item
+   ------------------------*/
+document.getElementById("itemForm").addEventListener("submit", e => {
+    e.preventDefault();
+
+    const type = document.getElementById("modalType").value;
+    const label = document.getElementById("modalLabel").value;
+    const value = Number(document.getElementById("modalValue").value);
+    const date = document.getElementById("modalDate").value;
+
+    let subcat = "";
+
+    if (type === "income" || type === "expense") {
+        subcat = document.querySelector('input[name="ieCategory"]:checked').value;
     } else if (type === "liabilities") {
-        document
-            .querySelectorAll('input[name="liabType"]')
-            .forEach((r) => (r.checked = r.value === it.subcategory));
+        subcat = document.querySelector('input[name="liabType"]:checked').value;
     } else if (type === "assets") {
-        document
-            .querySelectorAll('input[name="assetType"]')
-            .forEach((r) => (r.checked = r.value === it.subcategory));
+        subcat = document.querySelector('input[name="assetType"]:checked').value;
     }
 
-    document.getElementById("editIndex").value = idx;
-}
+    const item = { label, value, date, subcategory: subcat };
 
-function deleteItem(type, idx) {
-    if (confirm("Delete this item?")) {
-        data[type].splice(idx, 1);
-        renderAll();
-    }
-}
+    const idx = document.getElementById("editIndex").value;
+    if (idx === "") data[type].push(item);
+    else data[type][idx] = item;
 
-document.getElementById("exportBtn").addEventListener("click", () => {
-    const today = new Date().toISOString().split("T")[0];
-    const filename = `FS-${today}.json`;
-
-    const content = JSON.stringify(
-        {
-            income: data.income,
-            expense: data.expense,
-            liabilities: data.liabilities,
-            assets: data.assets,
-            subcategories: subcategories,
-        },
-        null,
-        2
-    );
-
-    const blob = new Blob([content], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(url);
+    renderAll();
+    itemModal.hide();
 });
 
-document.getElementById("importBtn").addEventListener("click", () => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = ".json";
+/* ------------------------
+   Delete Item
+   ------------------------*/
+let deleteTarget = { type: "", idx: -1 };
+const deleteModal = new bootstrap.Modal(document.getElementById("confirmDeleteModal"));
 
-    input.onchange = (e) => {
-        const file = e.target.files[0];
-        const reader = new FileReader();
+function requestDelete(type, idx) {
+    deleteTarget = { type, idx };
+    deleteModal.show();
+}
 
-        reader.onload = (ev) => {
-            try {
-                const imported = JSON.parse(ev.target.result);
+document.getElementById("confirmDeleteBtn").onclick = () => {
+    const { type, idx } = deleteTarget;
+    data[type].splice(idx, 1);
+    renderAll();
+    deleteModal.hide();
+    showToast("Item deleted", "error");
+};
 
-                data.income = imported.income || [];
-                data.expense = imported.expense || [];
-                data.liabilities = imported.liabilities || [];
-                data.assets = imported.assets || [];
+/* ------------------------
+   Export / Import (AES)
+   ------------------------*/
+let pendingEncryptedText = "";
 
-                subcategories.income =
-                    (imported.subcategories && imported.subcategories.income) || [];
-                subcategories.expense =
-                    (imported.subcategories && imported.subcategories.expense) || [];
-                subcategories.liabilities =
-                    (imported.subcategories && imported.subcategories.liabilities) || [];
-                subcategories.assets =
-                    (imported.subcategories && imported.subcategories.assets) || [];
+document.getElementById("exportBtn").onclick = () => {
+    document.getElementById("exportPassword").value = "";
+    new bootstrap.Modal(document.getElementById("exportPasswordModal")).show();
+};
 
-                renderAll();
-            } catch (err) {
-                alert("Invalid JSON");
-            }
-        };
+document.getElementById("confirmExport").onclick = () => {
+    const pass = document.getElementById("exportPassword").value.trim();
+    if (!pass) return showToast("Password required", "warning");
 
-        reader.readAsText(file);
+    const payload = {
+        income: data.income,
+        expense: data.expense,
+        liabilities: data.liabilities,
+        assets: data.assets,
+        highestProgress
     };
 
-    input.click();
-});
+    const encrypted = CryptoJS.AES.encrypt(JSON.stringify(payload), pass).toString();
+    const blob = new Blob([encrypted], { type: "text/plain" });
 
-window.openModal = openModal;
-window.openEdit = openEdit;
-window.deleteItem = deleteItem;
-renderAll();
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "FS.enc";
+    a.click();
 
-/* -------------------------------- */
-/*           DARK MODE JS           */
-/* -------------------------------- */
+    showToast("Exported", "success");
+};
 
+document.getElementById("importBtn").onclick = () => {
+    const f = document.createElement("input");
+    f.type = "file";
+    f.accept = ".enc";
+    f.onchange = e => {
+        const reader = new FileReader();
+        reader.onload = ev => {
+            pendingEncryptedText = ev.target.result;
+            document.getElementById("importPassword").value = "";
+            new bootstrap.Modal(document.getElementById("importPasswordModal")).show();
+        };
+        reader.readAsText(e.target.files[0]);
+    };
+    f.click();
+};
+
+document.getElementById("confirmImport").onclick = () => {
+    const pass = document.getElementById("importPassword").value.trim();
+    if (!pass) return showToast("Password required", "warning");
+
+    try {
+        const decrypted = CryptoJS.AES.decrypt(pendingEncryptedText, pass).toString(CryptoJS.enc.Utf8);
+        if (!decrypted) throw 0;
+
+        const obj = JSON.parse(decrypted);
+        data.income = obj.income || [];
+        data.expense = obj.expense || [];
+        data.liabilities = obj.liabilities || [];
+        data.assets = obj.assets || [];
+        highestProgress = obj.highestProgress || 0;
+
+        renderAll();
+        showToast("Imported", "success");
+    } catch {
+        showToast("Incorrect password", "error");
+    }
+};
+
+/* ------------------------
+   Theme Toggle
+   ------------------------*/
 const themeToggle = document.getElementById("themeToggle");
 const themeIcon = document.getElementById("themeIcon");
 
-// Load saved theme
 if (localStorage.getItem("theme") === "dark") {
     document.body.classList.add("dark-mode");
     themeIcon.classList.replace("bi-moon-fill", "bi-sun-fill");
+    themeToggle.setAttribute("aria-pressed", "true");
 }
 
 themeToggle.addEventListener("click", () => {
     document.body.classList.toggle("dark-mode");
-
     const isDark = document.body.classList.contains("dark-mode");
+
+    themeToggle.setAttribute("aria-pressed", String(isDark));
 
     if (isDark) {
         themeIcon.classList.replace("bi-moon-fill", "bi-sun-fill");
@@ -453,3 +365,13 @@ themeToggle.addEventListener("click", () => {
         localStorage.setItem("theme", "light");
     }
 });
+
+/* ------------------------
+   Expose for inline handlers
+   ------------------------*/
+window.openModal = openModal;
+window.openEdit = openEdit;
+window.requestDelete = requestDelete;
+
+/* Initial render */
+renderAll();
