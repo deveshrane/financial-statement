@@ -15,7 +15,7 @@ const ASSET_CATEGORIES = ["Fixed Assets", "Current Assets", "Depreciating Assets
 /* ------------------------
    State
    ------------------------*/
-let data = { income: [], expense: [], liabilities: [], assets: [] };
+let data = { income: [], expense: [], liabilities: [], assets: [], recurring: [] };
 let highestProgress = 0;
 
 /* ------------------------
@@ -133,6 +133,12 @@ function updateTotals() {
     document.getElementById("passiveIncome").textContent =
         "₹" + passiveTotal.toLocaleString("en-IN");
 
+    // Liquidity ratio: assets / liabilities (show N/A when liabilities are zero)
+    const liabilitiesSum = data.liabilities.reduce((a, b) => a + Number(b.value || 0), 0);
+    const assetsSum = data.assets.reduce((a, b) => a + Number(b.value || 0), 0);
+    const liquidityValue = liabilitiesSum === 0 ? "N/A" : (assetsSum / liabilitiesSum).toFixed(2);
+    document.getElementById("liquidityRatio").textContent = liquidityValue;
+
     const totalExp = data.expense.reduce((a, b) => a + Number(b.value), 0);
     const progress = totalExp === 0 ? 0 : Math.min(100, (passiveTotal / (2 * totalExp)) * 100);
 
@@ -249,7 +255,111 @@ function openEdit(type, idx) {
         );
     }
 }
+const recurringModal = new bootstrap.Modal(document.getElementById("recurringModal"));
 
+function openRecurringModal() {
+    document.getElementById("recurringForm").reset();
+    recurringModal.show();
+}
+
+document.getElementById("recurringForm").addEventListener("submit", e => {
+    e.preventDefault();
+
+    const label = document.getElementById("recLabel").value;
+    const amount = Number(document.getElementById("recAmount").value);
+    const frequency = document.getElementById("recFrequency").value;
+    const category = document.querySelector('input[name="recCategory"]:checked')?.value || "";
+
+    const editIdx = document.getElementById("recurringForm").getAttribute("data-edit");
+
+    if (editIdx !== null && editIdx !== "") {
+        data.recurring[editIdx] = { label, amount, frequency, category };
+        document.getElementById("recurringForm").removeAttribute("data-edit");
+    } else {
+        data.recurring.push({ label, amount, frequency, category });
+    }
+
+    renderRecurring();
+    recurringModal.hide();
+});
+function renderRecurring() {
+    const container = document.getElementById("recurringList");
+
+    if (!data.recurring.length) {
+        container.innerHTML = `<p class="text-muted mb-0">No recurring payments added yet.</p>`;
+        document.getElementById("monthlyRecurringTotal").textContent = "₹0";
+        return;
+    }
+
+    // Group by category
+    const groups = {};
+    data.recurring.forEach((r) => {
+        if (!groups[r.category]) groups[r.category] = [];
+        groups[r.category].push(r);
+    });
+
+    let html = "";
+    Object.keys(groups).forEach((category) => {
+        html += `
+            <div class="asset-heading text-success fw-bold">${category}</div>
+        `;
+        groups[category].forEach((r) => {
+            const idx = data.recurring.indexOf(r);
+            html += `
+                <div class="d-flex justify-content-between border-bottom py-2">
+                    <div>
+                        <strong>${r.label}</strong><br>
+                        <span class="text-secondary">${r.frequency}</span>
+                    </div>
+
+                    <div class="text-end">
+                        ₹${r.amount.toLocaleString("en-IN")}
+                        <div>
+                            <button class="btn btn-sm btn-outline-secondary me-1" onclick="editRecurring(${idx})">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteRecurring(${idx})">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+    });
+
+    container.innerHTML = html;
+
+    // Monthly total
+    let total = 0;
+    data.recurring.forEach(r => {
+        let divisor = 1;
+        if (r.frequency === "Quarterly") divisor = 3;
+        else if (r.frequency === "Bimonthly") divisor = 6;
+        else if (r.frequency === "Yearly") divisor = 12;
+
+        total += r.amount / divisor;
+    });
+    document.getElementById("monthlyRecurringTotal").textContent =
+        "₹" + Math.round(total).toLocaleString("en-IN");
+}
+// Global recurring edit/delete functions
+function editRecurring(idx) {
+    const r = data.recurring[idx];
+
+    document.getElementById("recLabel").value = r.label;
+    document.getElementById("recAmount").value = r.amount;
+    document.getElementById("recFrequency").value = r.frequency;
+
+    document.getElementById("recurringForm").setAttribute("data-edit", idx);
+
+    recurringModal.show();
+}
+
+function deleteRecurring(idx) {
+    deleteTarget = { type: "recurring", idx };
+    deleteModal.show();
+}
 /* ------------------------
    Save Item
    ------------------------*/
@@ -351,8 +461,15 @@ function requestDelete(type, idx) {
 
 document.getElementById("confirmDeleteBtn").onclick = () => {
     const { type, idx } = deleteTarget;
-    data[type].splice(idx, 1);
-    renderAll();
+
+    if (type === "recurring") {
+        data.recurring.splice(idx, 1);
+        renderRecurring();
+    } else {
+        data[type].splice(idx, 1);
+        renderAll();
+    }
+
     deleteModal.hide();
     showToast("Item deleted", "error");
 };
@@ -365,51 +482,59 @@ let pendingEncryptedText = "";
 document.getElementById("exportBtn").onclick = () => {
     document.getElementById("exportPassword").value = "";
     new bootstrap.Modal(document.getElementById("exportPasswordModal")).show();
+    document.getElementById("exportPassword").onkeydown = (e) => {
+        if (e.key === "Enter") document.getElementById("confirmExport").click();
+    };
+
+    document.getElementById("exportPasswordConfirm").onkeydown = (e) => {
+        if (e.key === "Enter") document.getElementById("confirmExport").click();
+    };
 };
 
 document.getElementById("confirmExport").onclick = () => {
     const pass = document.getElementById("exportPassword").value.trim();
-    if (!pass) return showToast("Password required", "warning");
+    const pass2 = document.getElementById("exportPasswordConfirm").value.trim();
+    const err = document.getElementById("exportError");
 
-    // Build export payload
+    err.style.display = "none";
+
+    if (!pass || !pass2) {
+        err.textContent = "Both fields are required";
+        err.style.display = "block";
+        return;
+    }
+
+    if (pass !== pass2) {
+        err.textContent = "Passwords do not match";
+        err.style.display = "block";
+        return;
+    }
+
     const payload = {
         income: data.income,
         expense: data.expense,
         liabilities: data.liabilities,
         assets: data.assets,
+        recurring: data.recurring,
         highestProgress
     };
 
-    // AES Encryption
     const encrypted = CryptoJS.AES.encrypt(JSON.stringify(payload), pass).toString();
 
-    // 🔥 SAFE DATE EXTRACTION
-    let allDates = [
-        ...data.income,
-        ...data.expense,
-        ...data.assets,
-        ...data.liabilities
-    ]
+    let allDates = [...data.income, ...data.expense, ...data.assets, ...data.liabilities]
         .map(i => i.date)
-        .filter(d => d && d.trim() !== "");
+        .filter(Boolean);
 
-    let latest = "NoDate";
-    if (allDates.length > 0) {
-        // Sort safely
-        latest = allDates.sort((a, b) => (a > b ? -1 : 1))[0];
-    }
+    const latest = allDates.length ? allDates.sort().reverse()[0] : "NoDate";
 
-    // Create file
     const blob = new Blob([encrypted], { type: "text/plain" });
 
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-
-    // Final file name
     a.download = `FS-${latest}.enc`;
-
     a.click();
 
+    bootstrap.Modal.getInstance(document.getElementById("exportPasswordModal")).hide();
     showToast("Exported", "success");
 };
 
@@ -422,6 +547,9 @@ document.getElementById("importBtn").onclick = () => {
         reader.onload = ev => {
             pendingEncryptedText = ev.target.result;
             document.getElementById("importPassword").value = "";
+            document.getElementById("importPassword").onkeydown = (e) => {
+                if (e.key === "Enter") document.getElementById("confirmImport").click();
+            };
             new bootstrap.Modal(document.getElementById("importPasswordModal")).show();
         };
         reader.readAsText(e.target.files[0]);
@@ -431,23 +559,37 @@ document.getElementById("importBtn").onclick = () => {
 
 document.getElementById("confirmImport").onclick = () => {
     const pass = document.getElementById("importPassword").value.trim();
-    if (!pass) return showToast("Password required", "warning");
+    const err = document.getElementById("importError");
+
+    err.style.display = "none";
+
+    if (!pass) {
+        err.textContent = "Password required";
+        err.style.display = "block";
+        return;
+    }
 
     try {
         const decrypted = CryptoJS.AES.decrypt(pendingEncryptedText, pass).toString(CryptoJS.enc.Utf8);
         if (!decrypted) throw 0;
 
         const obj = JSON.parse(decrypted);
+
         data.income = obj.income || [];
         data.expense = obj.expense || [];
         data.liabilities = obj.liabilities || [];
         data.assets = obj.assets || [];
+        data.recurring = obj.recurring || [];
         highestProgress = obj.highestProgress || 0;
 
         renderAll();
+        renderRecurring();
+
+        bootstrap.Modal.getInstance(document.getElementById("importPasswordModal")).hide();
         showToast("Imported", "success");
     } catch {
-        showToast("Incorrect password", "error");
+        err.textContent = "Wrong Password";
+        err.style.display = "block";
     }
 };
 
@@ -481,9 +623,13 @@ themeToggle.addEventListener("click", () => {
 /* ------------------------
    Expose for inline handlers
    ------------------------*/
+
 window.openModal = openModal;
 window.openEdit = openEdit;
 window.requestDelete = requestDelete;
+window.editRecurring = editRecurring;
+window.deleteRecurring = deleteRecurring;
+window.openRecurringModal = openRecurringModal;
 
 /* Initial render */
 renderAll();

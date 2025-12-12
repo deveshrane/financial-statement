@@ -87,8 +87,9 @@
                   </button>
                 </div>
                 <div class="card-body" id="incomeList" aria-live="polite"></div>
-                <div class="card-footer text-end fw-bold" id="incomeTotal">
-                  ₹0
+                <div class="card-footer fw-bold d-flex justify-content-between">
+                  <span>Total</span>
+                  <span id="incomeTotal">₹0</span>
                 </div>
               </div>
             </div>
@@ -113,8 +114,9 @@
                   id="expenseList"
                   aria-live="polite"
                 ></div>
-                <div class="card-footer text-end fw-bold" id="expenseTotal">
-                  ₹0
+                <div class="card-footer fw-bold d-flex justify-content-between">
+                  <span>Total</span>
+                  <span id="expenseTotal">₹0</span>
                 </div>
               </div>
             </div>
@@ -139,8 +141,9 @@
                   id="liabilitiesList"
                   aria-live="polite"
                 ></div>
-                <div class="card-footer text-end fw-bold" id="liabilitiesTotal">
-                  ₹0
+                <div class="card-footer fw-bold d-flex justify-content-between">
+                  <span>Total</span>
+                  <span id="liabilitiesTotal">₹0</span>
                 </div>
               </div>
             </div>
@@ -161,8 +164,9 @@
                   </button>
                 </div>
                 <div class="card-body" id="assetsList" aria-live="polite"></div>
-                <div class="card-footer text-end fw-bold" id="assetsTotal">
-                  ₹0
+                <div class="card-footer fw-bold d-flex justify-content-between">
+                  <span>Total</span>
+                  <span id="assetsTotal">₹0</span>
                 </div>
               </div>
             </div>
@@ -214,6 +218,30 @@
               </div>
             </div>
           </div>
+          <!-- Recurring Payments Card -->
+          <div class="card shadow-sm mt-3">
+            <div
+              class="card-header d-flex justify-content-between align-items-center"
+            >
+              <h5 class="mb-0">Recurring Payments</h5>
+
+              <button
+                class="btn btn-sm btn-primary"
+                onclick="openRecurringModal()"
+              >
+                + Add
+              </button>
+            </div>
+
+            <div class="card-body" id="recurringList">
+              <p class="text-muted mb-0">No recurring payments added yet.</p>
+            </div>
+
+            <div class="card-footer fw-bold d-flex justify-content-between">
+              <span>Monthly Amount</span>
+              <span id="monthlyRecurringTotal">₹0</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -255,7 +283,7 @@
               </div>
 
               <div class="mb-3">
-                <label class="form-label">Value</label>
+                <label class="form-label">Amount</label>
                 <input
                   type="number"
                   id="modalValue"
@@ -413,7 +441,22 @@
               id="exportPassword"
               class="form-control"
               placeholder="Password"
+              onkeydown="if(event.key==='Enter'){ document.getElementById('confirmExport').click(); }"
             />
+            <label class="form-label mt-3">Re-enter password</label>
+            <input
+              type="password"
+              id="exportPasswordConfirm"
+              class="form-control"
+              placeholder="Re-enter Password"
+            />
+            <div
+              id="exportError"
+              class="text-danger mt-2"
+              style="display: none"
+            >
+              Passwords do not match
+            </div>
           </div>
           <div class="modal-footer">
             <button class="btn btn-danger" data-bs-dismiss="modal">
@@ -454,7 +497,15 @@
               id="importPassword"
               class="form-control"
               placeholder="Password"
+              onkeydown="if(event.key==='Enter'){ document.getElementById('confirmImport').click(); }"
             />
+            <div
+              id="importError"
+              class="text-danger mt-2"
+              style="display: none"
+            >
+              Wrong Password
+            </div>
           </div>
           <div class="modal-footer">
             <button class="btn btn-danger" data-bs-dismiss="modal">
@@ -495,7 +546,151 @@
         </div>
       </div>
     </div>
+    <!-- Recurring Payment Modal -->
+    <div
+      class="modal fade"
+      id="recurringModal"
+      tabindex="-1"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Add Recurring Payment</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
 
+          <div class="modal-body">
+            <form id="recurringForm">
+              <div class="mb-3">
+                <label class="form-label">Label</label>
+                <input
+                  type="text"
+                  id="recLabel"
+                  class="form-control"
+                  required
+                />
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Amount</label>
+                <input
+                  type="number"
+                  id="recAmount"
+                  class="form-control"
+                  required
+                />
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Frequency</label>
+                <select id="recFrequency" class="form-control" required>
+                  <option value="Monthly">Monthly</option>
+                  <option value="Quarterly">Quarterly</option>
+                  <option value="Bimonthly">Bimonthly</option>
+                  <option value="Yearly">Yearly</option>
+                </select>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label d-block">Category</label>
+
+                <div class="form-check">
+                  <input
+                    class="form-check-input"
+                    type="radio"
+                    name="recCategory"
+                    id="recInv"
+                    value="Investments"
+                    required
+                  />
+                  <label class="form-check-label" for="recInv"
+                    >Investments</label
+                  >
+                </div>
+
+                <div class="form-check">
+                  <input
+                    class="form-check-input"
+                    type="radio"
+                    name="recCategory"
+                    id="recEMI"
+                    value="EMI"
+                  />
+                  <label class="form-check-label" for="recEMI">EMI</label>
+                </div>
+
+                <div class="form-check">
+                  <input
+                    class="form-check-input"
+                    type="radio"
+                    name="recCategory"
+                    id="recPeople"
+                    value="People"
+                  />
+                  <label class="form-check-label" for="recPeople">People</label>
+                </div>
+
+                <div class="form-check">
+                  <input
+                    class="form-check-input"
+                    type="radio"
+                    name="recCategory"
+                    id="recSub"
+                    value="Subscription"
+                  />
+                  <label class="form-check-label" for="recSub"
+                    >Subscription</label
+                  >
+                </div>
+
+                <div class="form-check">
+                  <input
+                    class="form-check-input"
+                    type="radio"
+                    name="recCategory"
+                    id="recRent"
+                    value="Rent"
+                  />
+                  <label class="form-check-label" for="recRent">Rent</label>
+                </div>
+
+                <div class="form-check">
+                  <input
+                    class="form-check-input"
+                    type="radio"
+                    name="recCategory"
+                    id="recInsurance"
+                    value="Insurance"
+                  />
+                  <label class="form-check-label" for="recInsurance"
+                    >Insurance</label
+                  >
+                </div>
+
+                <div class="form-check">
+                  <input
+                    class="form-check-input"
+                    type="radio"
+                    name="recCategory"
+                    id="recOther"
+                    value="Others"
+                    checked
+                  />
+                  <label class="form-check-label" for="recOther">Others</label>
+                </div>
+              </div>
+
+              <button class="btn btn-primary w-100">Save</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
