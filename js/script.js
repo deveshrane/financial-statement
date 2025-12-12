@@ -143,9 +143,11 @@ function updateTotals() {
     document.getElementById("exitPercent").textContent = current + "%";
     document.getElementById("highestPercent").textContent = highestProgress + "%";
 
-    const allDates = [...data.income, ...data.expense, ...data.assets, ...data.liabilities]
+    let allDates = [...data.income, ...data.expense, ...data.assets, ...data.liabilities]
         .map(i => i.date)
         .filter(Boolean);
+
+    let latest = allDates.length ? allDates.sort().reverse()[0] : "NoDate";
 
     document.getElementById("statementDate").textContent =
         allDates.length ? `(as on ${allDates.sort().reverse()[0]})` : "(as on -)";
@@ -157,6 +159,13 @@ function updateTotals() {
 const itemModal = new bootstrap.Modal(document.getElementById("itemModal"));
 
 function openModal(type) {
+    const modalTitle = document.getElementById("modalTitle");
+
+    if (type === "assets") modalTitle.textContent = "Add Asset";
+    else if (type === "liabilities") modalTitle.textContent = "Add Liability";
+    else if (type === "income") modalTitle.textContent = "Add Income";
+    else if (type === "expense") modalTitle.textContent = "Add Expense";
+    else modalTitle.textContent = "Add Item";
     document.getElementById("modalType").value = type;
     document.getElementById("editIndex").value = "";
     document.getElementById("itemForm").reset();
@@ -169,10 +178,22 @@ function openModal(type) {
         type !== "liabilities"
     );
 
+    if (type === "liabilities") {
+        // Auto-select first liability type
+        const radios = document.querySelectorAll('input[name="liabType"]');
+        if (radios.length) radios[0].checked = true;
+    }
+
     document.getElementById("assetRadios").classList.toggle(
         "d-none",
         type !== "assets"
     );
+
+    if (type === "assets") {
+        // Auto-select first asset type
+        const radios = document.querySelectorAll('input[name="assetType"]');
+        if (radios.length) radios[0].checked = true;
+    }
 
     // Build radio group for income/expense
     if (type === "income" || type === "expense") {
@@ -189,7 +210,18 @@ function openModal(type) {
             .join("");
         cont.querySelector(".form-check-input").checked = true;
     }
+    // LIVE UPDATE RESULT CARD WHEN USER TYPES
+    document.getElementById("modalValue").oninput = () => {
+        previewTemporaryChange();
+    };
 
+    document.getElementById("modalDate").oninput = () => {
+        previewTemporaryChange();
+    };
+
+    document.querySelectorAll('input[name="ieCategory"], input[name="liabType"], input[name="assetType"]').forEach(radio => {
+        radio.onchange = () => previewTemporaryChange();
+    });
     itemModal.show();
 }
 
@@ -248,7 +280,64 @@ document.getElementById("itemForm").addEventListener("submit", e => {
     renderAll();
     itemModal.hide();
 });
+function previewTemporaryChange() {
+    // Build a temp item using modal data
+    const type = document.getElementById("modalType").value;
+    const label = document.getElementById("modalLabel").value;
+    const value = Number(document.getElementById("modalValue").value);
+    const date = document.getElementById("modalDate").value;
 
+    let subcat = "";
+
+    if (type === "income" || type === "expense") {
+        const checked = document.querySelector('input[name="ieCategory"]:checked');
+        if (checked) subcat = checked.value;
+    }
+    if (type === "liabilities") {
+        const checked = document.querySelector('input[name="liabType"]:checked');
+        if (checked) subcat = checked.value;
+    }
+    if (type === "assets") {
+        const checked = document.querySelector('input[name="assetType"]:checked');
+        if (checked) subcat = checked.value;
+    }
+
+    // Create a COPY of the data object
+    let clone = JSON.parse(JSON.stringify(data));
+
+    // If editing existing item
+    const idx = document.getElementById("editIndex").value;
+    if (idx !== "") clone[type][idx] = { label, value, date, subcategory: subcat };
+    else clone[type].push({ label, value, date, subcategory: subcat });
+
+    // Now calculate LIVE RESULT using the clone
+    updateResultPreview(clone);
+}
+function updateResultPreview(tempData) {
+    // Cash flow
+    const cashFlow =
+        tempData.income.reduce((a, b) => a + Number(b.value), 0) -
+        tempData.expense.reduce((a, b) => a + Number(b.value), 0);
+
+    document.getElementById("currentCashFlow").textContent =
+        "₹" + cashFlow.toLocaleString("en-IN");
+
+    // Passive income
+    const passiveTotal = tempData.income
+        .filter(it => it.subcategory === "Passive")
+        .reduce((a, b) => a + Number(b.value), 0);
+
+    document.getElementById("passiveIncome").textContent =
+        "₹" + passiveTotal.toLocaleString("en-IN");
+
+    // Liquidity ratio — optional formula (you can change)
+    const liabilities = tempData.liabilities.reduce((a, b) => a + Number(b.value), 0);
+    const assets = tempData.assets.reduce((a, b) => a + Number(b.value), 0);
+
+    const liquidity = liabilities === 0 ? "N/A" : (assets / liabilities).toFixed(2);
+
+    document.getElementById("liquidityRatio").textContent = liquidity;
+}
 /* ------------------------
    Delete Item
    ------------------------*/
@@ -282,6 +371,7 @@ document.getElementById("confirmExport").onclick = () => {
     const pass = document.getElementById("exportPassword").value.trim();
     if (!pass) return showToast("Password required", "warning");
 
+    // Build export payload
     const payload = {
         income: data.income,
         expense: data.expense,
@@ -290,12 +380,34 @@ document.getElementById("confirmExport").onclick = () => {
         highestProgress
     };
 
+    // AES Encryption
     const encrypted = CryptoJS.AES.encrypt(JSON.stringify(payload), pass).toString();
+
+    // 🔥 SAFE DATE EXTRACTION
+    let allDates = [
+        ...data.income,
+        ...data.expense,
+        ...data.assets,
+        ...data.liabilities
+    ]
+        .map(i => i.date)
+        .filter(d => d && d.trim() !== "");
+
+    let latest = "NoDate";
+    if (allDates.length > 0) {
+        // Sort safely
+        latest = allDates.sort((a, b) => (a > b ? -1 : 1))[0];
+    }
+
+    // Create file
     const blob = new Blob([encrypted], { type: "text/plain" });
 
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = "FS.enc";
+
+    // Final file name
+    a.download = `FS-${latest}.enc`;
+
     a.click();
 
     showToast("Exported", "success");
